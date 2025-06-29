@@ -1,0 +1,29 @@
+pipeline {
+  agent any
+  stages {
+    stage('Clone Repo') {
+      steps {
+        git 'https://github.com/your-username/feedback-app.git'
+      }
+    }
+    stage('Build Image') {
+      steps {
+        sh 'docker build -t yourname/feedback-app:latest .'
+      }
+    }
+    stage('Push Image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+          sh 'docker push yourname/feedback-app:latest'
+        }
+      }
+    }
+    stage('Deploy App') {
+      steps {
+        sh 'docker rm -f feedback-app || true'
+        sh 'docker run -d -p 5000:5000 --name feedback-app yourname/feedback-app:latest'
+      }
+    }
+  }
+}
